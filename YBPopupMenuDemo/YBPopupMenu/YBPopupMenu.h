@@ -34,30 +34,6 @@ typedef NS_ENUM(NSInteger , YBPopupMenuPriorityDirection) {
 };
 
 @class YBPopupMenu;
-@protocol YBPopupMenuDelegate <NSObject>
-
-@optional
-
-- (void)ybPopupMenuBeganDismiss:(YBPopupMenu *)ybPopupMenu;
-- (void)ybPopupMenuDidDismiss:(YBPopupMenu *)ybPopupMenu;
-- (void)ybPopupMenuBeganShow:(YBPopupMenu *)ybPopupMenu;
-- (void)ybPopupMenuDidShow:(YBPopupMenu *)ybPopupMenu;
-
-/**
- 点击事件回调
- */
-- (void)ybPopupMenu:(YBPopupMenu *)ybPopupMenu didSelectedAtIndex:(NSInteger)index;
-
-/**
- 自定义cell
- 
- 可以自定义cell，设置后会忽略 fontSize textColor backColor type 属性
- cell 的高度是根据 itemHeight 的，直接设置无效
- 建议cell 背景色设置为透明色，不然切的圆角显示不出来
- */
-- (UITableViewCell *)ybPopupMenu:(YBPopupMenu *)ybPopupMenu cellForRowAtIndex:(NSInteger)index;
-
-@end
 
 @interface YBPopupMenu : UIView
 
@@ -222,9 +198,30 @@ typedef NS_ENUM(NSInteger , YBPopupMenuPriorityDirection) {
 @property (nonatomic, strong) id <YBPopupMenuAnimationManager> animationManager;
 
 /**
- 代理
+    事件监听和cell的自定义 block
  */
-@property (nonatomic, weak) id <YBPopupMenuDelegate> delegate;
+@property (nonatomic, strong) void(^ybPopupMenuBeganShow)(YBPopupMenu *ybPopupMenu);
+@property (nonatomic, strong) void(^ybPopupMenuDidShow)(YBPopupMenu *ybPopupMenu);
+@property (nonatomic, strong) void(^ybPopupMenuBeganDismiss)(YBPopupMenu *ybPopupMenu);
+@property (nonatomic, strong) void(^ybPopupMenuDidDismiss)(YBPopupMenu *ybPopupMenu);
+/**
+ 自定义cell高度
+ */
+@property (nonatomic, strong) CGFloat(^ybPopupMenuHeightForRowAtIndex)(YBPopupMenu *ybPopupMenu, NSInteger index);
+/**
+ 自定义cell
+ 
+ 可以自定义cell，设置后会忽略 fontSize textColor backColor type 属性
+ cell 的高度是根据 itemHeight 的，直接设置无效
+ 建议cell 背景色设置为透明色，不然切的圆角显示不出来
+ */
+@property (nonatomic, strong) UITableViewCell *(^ybPopupMenuCellForRowAtIndex)(YBPopupMenu *ybPopupMenu, NSInteger index);
+/**
+ 点击事件回调
+ */
+@property (nonatomic, strong) void(^ybPopupMenuDidSelectedAtIndex)(YBPopupMenu *ybPopupMenu, NSInteger index);
+
+@property (nonatomic, strong) void(^ybPopupMenuCustomCellAtIndex)(YBPopupMenu *ybPopupMenu, UITableViewCell * cell, NSInteger index);
 
 /**
  在指定位置弹出

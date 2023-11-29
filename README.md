@@ -5,7 +5,7 @@
 ![(演示效果)](https://lyb5834.github.io/Images/YBPopupMenuGif.gif)
 
 # cocoapods支持
-  * 只需在`Podfile`中加入`pod 'YBPopupMenu'`后`pod install`即可
+  * 只需在`Podfile`中加入`pod 'ZYRollView', :git => 'https://github.com/xuzeyu/ZYRollView.git'`后`pod install`即可
 
 # SwiftPackageManager(SPM)支持
 
@@ -20,6 +20,7 @@
 * 增加了高斯模糊视图
 
 # 之前更新
+  * 新增自动计算Cell高度，使Cell高度可以自适应，需要Cell同时设置好上下约束,废弃delegate，改为block回调
   * 修复了快速点击屏幕动画重复执行的问题
   * 增加了`dismissAllPopupMenu` 方法，方便一键隐藏所有popupMenu
   * 删除老版初始化方法，避免频繁调用`[self updateUI]`方法
