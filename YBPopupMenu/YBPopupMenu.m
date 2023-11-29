@@ -164,7 +164,7 @@ UITableViewDataSource
     UITableViewCell * tableViewCell = nil;
     if (self.ybPopupMenuCellForRowAtIndex) {
         WeakSelf;
-        self.ybPopupMenuCellForRowAtIndex(weakSelf, indexPath.row);
+        tableViewCell = self.ybPopupMenuCellForRowAtIndex(weakSelf, indexPath.row);
     }
     
     if (tableViewCell) {
