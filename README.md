@@ -5,7 +5,7 @@
 ![(演示效果)](https://lyb5834.github.io/Images/YBPopupMenuGif.gif)
 
 # cocoapods支持
-  * 只需在`Podfile`中加入`pod 'ZYRollView', :git => 'https://github.com/xuzeyu/ZYRollView.git'`后`pod install`即可
+  * 只需在`Podfile`中加入`pod 'YBPopupMenu', :git => 'https://github.com/xuzeyu/YBPopupMenu.git'`后`pod install`即可
 
 # SwiftPackageManager(SPM)支持
 

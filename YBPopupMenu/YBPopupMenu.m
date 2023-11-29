@@ -8,11 +8,13 @@
 
 #import "YBPopupMenu.h"
 #import "YBPopupMenuPath.h"
+#import <UIKit/UIKit.h>
 
 #define YBScreenWidth [UIScreen mainScreen].bounds.size.width
 #define YBScreenHeight [UIScreen mainScreen].bounds.size.height
 #define YBMainWindow  [UIApplication sharedApplication].keyWindow
 #define YB_SAFE_BLOCK(BlockName, ...) ({ !BlockName ? nil : BlockName(__VA_ARGS__); })
+#define WeakSelf __weak __typeof(self)weakSelf = self
 
 #pragma mark - /////////////
 #pragma mark - private cell
@@ -125,16 +127,17 @@ UITableViewDataSource
 - (void)dismiss
 {
     [self.orientationManager endMonitorDeviceOrientation];
-    if (self.delegate && [self.delegate respondsToSelector:@selector(ybPopupMenuBeganDismiss:)]) {
-        [self.delegate ybPopupMenuBeganDismiss:self];
+    if (self.ybPopupMenuBeganDismiss) {
+        WeakSelf;
+        self.ybPopupMenuBeganDismiss(weakSelf);
     }
     __weak typeof(self) weakSelf = self;
     [self.animationManager displayDismissAnimationCompletion:^{
         __strong typeof(weakSelf)self = weakSelf;
-        if (self.delegate && [self.delegate respondsToSelector:@selector(ybPopupMenuDidDismiss:)]) {
-            [self.delegate ybPopupMenuDidDismiss:self];
+        if (self.ybPopupMenuDidDismiss) {
+            WeakSelf;
+            self.ybPopupMenuDidDismiss(weakSelf);
         }
-        self.delegate = nil;
         [self removeFromSuperview];
         [self.menuBackView removeFromSuperview];
     }];
@@ -159,11 +162,16 @@ UITableViewDataSource
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
     UITableViewCell * tableViewCell = nil;
-    if (self.delegate && [self.delegate respondsToSelector:@selector(ybPopupMenu:cellForRowAtIndex:)]) {
-        tableViewCell = [self.delegate ybPopupMenu:self cellForRowAtIndex:indexPath.row];
+    if (self.ybPopupMenuCellForRowAtIndex) {
+        WeakSelf;
+        self.ybPopupMenuCellForRowAtIndex(weakSelf, indexPath.row);
     }
     
     if (tableViewCell) {
+        if (self.ybPopupMenuCustomCellAtIndex) {
+            WeakSelf;
+            self.ybPopupMenuCustomCellAtIndex(weakSelf, tableViewCell, indexPath.row);
+        }
         return tableViewCell;
     }
     
@@ -199,11 +207,20 @@ UITableViewDataSource
     }else {
         cell.imageView.image = nil;
     }
+    
+    if (self.ybPopupMenuCustomCellAtIndex) {
+        WeakSelf;
+        self.ybPopupMenuCustomCellAtIndex(weakSelf, tableViewCell, indexPath.row);
+    }
     return cell;
 }
 
 - (CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    if (self.ybPopupMenuHeightForRowAtIndex) {
+        WeakSelf;
+        return self.ybPopupMenuHeightForRowAtIndex(weakSelf, indexPath.row);
+    }
     return _itemHeight;
 }
 
@@ -212,8 +229,9 @@ UITableViewDataSource
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     if (_dismissOnSelected) [self dismiss];
     
-    if (self.delegate && [self.delegate respondsToSelector:@selector(ybPopupMenu:didSelectedAtIndex:)]) {
-        [self.delegate ybPopupMenu:self didSelectedAtIndex:indexPath.row];
+    if (self.ybPopupMenuDidSelectedAtIndex) {
+        WeakSelf;
+        self.ybPopupMenuDidSelectedAtIndex(weakSelf, indexPath.row);
     }
 }
 
@@ -251,8 +269,9 @@ UITableViewDataSource
     [self updateUI];
     [YBMainWindow addSubview:_menuBackView];
     [YBMainWindow addSubview:self];
-    if (self.delegate && [self.delegate respondsToSelector:@selector(ybPopupMenuBeganShow:)]) {
-        [self.delegate ybPopupMenuBeganShow:self];
+    if (self.ybPopupMenuBeganShow) {
+        WeakSelf;
+        self.ybPopupMenuBeganShow(weakSelf);
     }
     if ([[self getLastVisibleCell] isKindOfClass:[YBPopupMenuCell class]]) {
         YBPopupMenuCell *cell = [self getLastVisibleCell];
@@ -262,8 +281,9 @@ UITableViewDataSource
     [self.animationManager displayShowAnimationCompletion:^{
         __strong typeof(weakSelf)self = weakSelf;
         
-        if (self.delegate && [self.delegate respondsToSelector:@selector(ybPopupMenuDidShow:)]) {
-            [self.delegate ybPopupMenuDidShow:self];
+        if (self.ybPopupMenuDidShow) {
+            WeakSelf;
+            self.ybPopupMenuDidShow(weakSelf);
         }
     }];
 }
@@ -419,13 +439,53 @@ UITableViewDataSource
 {
     _menuBackView.frame = CGRectMake(0, 0, YBScreenWidth, YBScreenHeight);
     CGFloat height;
-    if (_titles.count > _maxVisibleCount) {
-        height = _itemHeight * _maxVisibleCount + _borderWidth * 2;
-        self.tableView.bounces = YES;
+//    if (_titles.count > _maxVisibleCount) {
+//        height = _itemHeight * _maxVisibleCount + _borderWidth * 2;
+//        self.tableView.bounces = YES;
+//    }else {
+//        height = _itemHeight * _titles.count + _borderWidth * 2;
+//        self.tableView.bounces = NO;
+//    }
+    
+    height =  _borderWidth * 2;
+    BOOL isGeaterThanMaxVisibleCount = _titles.count > _maxVisibleCount;
+    NSInteger count = isGeaterThanMaxVisibleCount ? _maxVisibleCount : _titles.count;
+    self.tableView.bounces = isGeaterThanMaxVisibleCount;
+    
+    if (self.ybPopupMenuHeightForRowAtIndex || _itemHeight == UITableViewAutomaticDimension) {
+        for (NSInteger i = 0; i < count; i++) {
+            CGFloat rowHeight = 0;
+            NSIndexPath *indexPath = [NSIndexPath indexPathForRow:i inSection:0];
+            if (self.ybPopupMenuHeightForRowAtIndex) {
+                rowHeight = [self tableView:self.tableView heightForRowAtIndexPath:indexPath];
+            }else {
+                rowHeight = _itemHeight;
+            }
+            
+            if (rowHeight == UITableViewAutomaticDimension) {
+                UITableViewCell *cell = [self tableView:self.tableView cellForRowAtIndexPath:indexPath];
+                BOOL isHaveCellWidthConstraint = NO;
+                for (NSLayoutConstraint *constraint in cell.contentView.constraints) {
+                    if ([@"CellWidth" isEqualToString:constraint.identifier]) {
+                        isHaveCellWidthConstraint = YES;
+                        break;
+                    }
+                }
+                if (!isHaveCellWidthConstraint) {
+                    NSLayoutConstraint *constraint = [NSLayoutConstraint constraintWithItem:cell.contentView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeWidth multiplier:1.0 constant:_itemWidth];
+                    constraint.priority = UILayoutPriorityDefaultHigh;
+                    constraint.identifier = @"CellWidth";
+                    [cell.contentView addConstraint:constraint];
+                }
+                rowHeight = [cell.contentView systemLayoutSizeFittingSize:UILayoutFittingCompressedSize].height;
+            }
+            
+            height += rowHeight;
+        }
     }else {
-        height = _itemHeight * _titles.count + _borderWidth * 2;
-        self.tableView.bounces = NO;
+        height += _itemHeight * count;
     }
+    
      _isChangeDirection = NO;
     if (_priorityDirection == YBPopupMenuPriorityDirectionTop) {
         if (_point.y + height + _arrowHeight > YBScreenHeight - _minSpace) {
